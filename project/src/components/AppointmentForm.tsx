@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Scissors, User } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useSupabaseData } from '@/hooks/use-supabase-data';
+import { supabase } from '../integrations/supabase/client';
+import { useSupabaseData } from '../hooks/use-supabase-data';
 
 interface Barber {
   id: string;

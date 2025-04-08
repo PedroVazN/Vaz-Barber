@@ -1,8 +1,8 @@
 
 import React from 'react';
-import Header from '@/components/Header';
-import BarberSchedule from '@/components/BarberSchedule';
-import Footer from '@/components/Footer';
+import Header from '../components/Header';
+import BarberSchedule from '../components/BarberSchedule';
+import Footer from '../components/Footer';
 
 const BarberSchedulePage = () => {
   return (
