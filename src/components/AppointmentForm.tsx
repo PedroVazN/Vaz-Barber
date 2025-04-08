@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Calendar, Clock, Scissors, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 const barbers = [
   { id: 1, name: 'Ricardo Alves' },
@@ -46,21 +46,15 @@ const AppointmentForm = () => {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Check if all fields are filled
     const isFormValid = Object.values(formData).every(value => value.trim() !== '');
     
     if (isFormValid) {
-      // Form submission logic would go here in a real application
       console.log('Form submitted:', formData);
-      
-      // Show success message
       toast({
         title: "Agendamento realizado!",
         description: `Seu horário foi agendado para ${formData.date} às ${formData.time}`,
         variant: "default",
       });
-      
-      // Reset form
       setFormData({
         name: '',
         phone: '',
@@ -71,7 +65,6 @@ const AppointmentForm = () => {
         barber: ''
       });
     } else {
-      // Show error message
       toast({
         title: "Erro no agendamento",
         description: "Por favor, preencha todos os campos do formulário",
@@ -80,7 +73,6 @@ const AppointmentForm = () => {
     }
   };
   
-  // Calculate tomorrow's date as the minimum selectable date
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split('T')[0];
@@ -96,6 +88,9 @@ const AppointmentForm = () => {
             Reserve um horário com nossos especialistas e garanta um atendimento personalizado 
             para realçar seu estilo.
           </p>
+          <Link to="/agenda" className="inline-block mt-4 text-barber-primary hover:text-barber-accent transition-colors">
+            Ver agenda completa do barbeiro →
+          </Link>
         </div>
         
         <div className="max-w-4xl mx-auto">
