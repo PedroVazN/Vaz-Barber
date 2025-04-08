@@ -24,7 +24,7 @@ const barbers = [
     name: 'Fernando Costa',
     role: 'Barbeiro Estilista',
     experience: '10 anos de experiência',
-    image: 'https://images.unsplash.com/photo-1599351431613-18ef1feae3b0?q=80&w=1988&auto=format&fit=crop',
+    image: 'https://st4allthings4p4ci.blob.core.windows.net/allthingshair/allthingshair/wp-content/uploads/sites/2/2017/03/barbeiro-ruim-377x483.jpg',
     specialty: 'Cortes Modernos e Coloração'
   }
 ];

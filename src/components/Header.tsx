@@ -65,7 +65,7 @@ const Header = () => {
             }}
             transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
           >
-            NAVALHA DIGITAL
+            VAR BARBER
           </motion.span>
         </motion.a>
         
@@ -102,7 +102,7 @@ const Header = () => {
         
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {['services', 'barbers', 'contact'].map((item, index) => (
+          {['serviços', 'barbeiros', 'contato'].map((item, index) => (
             <motion.a 
               key={item} 
               href={`#${item}`} 

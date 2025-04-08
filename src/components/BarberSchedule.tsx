@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { 
-  Card, 
+import {
+  Card,
   CardContent,
   CardDescription,
   CardFooter,
@@ -64,92 +64,92 @@ const BarberSchedule = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [availableTimes, setAvailableTimes] = useState<{ time: string; isBooked: boolean }[]>([]);
-  
+
   // Fetch barbers from Supabase
   const { data: barbers } = useSupabaseData<Barber>({
     tableName: 'barbers',
     orderBy: { column: 'name' }
   });
-  
+
   // Fetch services from Supabase
   const { data: services } = useSupabaseData<Service>({
     tableName: 'services'
   });
-  
+
   useEffect(() => {
     // Set default barber when data loads
     if (barbers.length > 0 && !selectedBarber) {
       setSelectedBarber(barbers[0].id);
     }
   }, [barbers, selectedBarber]);
-  
+
   // Subscribe to changes in the appointments table
   useEffect(() => {
     const appointmentsChannel = supabase
       .channel('appointments-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'appointments' 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'appointments'
       }, () => {
         // When changes occur, refresh the appointments data
         fetchAppointmentsForDate();
       })
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(appointmentsChannel);
     };
   }, [selectedDate, selectedBarber]);
-  
+
   // Fetch appointments when selected date or barber changes
   useEffect(() => {
     if (selectedDate && selectedBarber) {
       fetchAppointmentsForDate();
     }
   }, [selectedDate, selectedBarber]);
-  
+
   // Generate available time slots
   useEffect(() => {
     updateAvailableTimes();
   }, [appointments]);
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('pt-BR');
   };
-  
+
   const updateAvailableTimes = () => {
     const times = [];
     const startHour = 9; // 9 AM
     const endHour = 19; // 7 PM
     const interval = 30; // 30 minutes
-    
+
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += interval) {
         const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const isBooked = appointments.some(appointment => {
           return appointment.appointment_time.slice(0, 5) === timeStr;
         });
-        
-        times.push({ 
-          time: timeStr, 
-          isBooked 
+
+        times.push({
+          time: timeStr,
+          isBooked
         });
       }
     }
-    
+
     setAvailableTimes(times);
   };
-  
+
   const fetchAppointmentsForDate = async () => {
     if (!selectedDate || !selectedBarber) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       const dateString = selectedDate.toISOString().split('T')[0];
-      
+
       // Fetch appointments for the selected date and barber
       const { data, error } = await supabase
         .from('appointments')
@@ -164,9 +164,9 @@ const BarberSchedule = () => {
         .eq('appointment_date', dateString)
         .eq('barber_id', selectedBarber)
         .order('appointment_time');
-      
+
       if (error) throw error;
-      
+
       setAppointments(data || []);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -179,22 +179,22 @@ const BarberSchedule = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleCancelAppointment = async (appointmentId: string) => {
     try {
       const { error } = await supabase
         .from('appointments')
         .delete()
         .eq('id', appointmentId);
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Agendamento cancelado",
         description: "O agendamento foi cancelado com sucesso.",
         variant: "default",
       });
-      
+
       // The subscription will automatically trigger a refresh
     } catch (error) {
       console.error('Error canceling appointment:', error);
@@ -205,36 +205,36 @@ const BarberSchedule = () => {
       });
     }
   };
-  
+
   // Check if a date has appointments
   const hasAppointments = async (date: Date) => {
     if (!selectedBarber) return false;
-    
+
     const dateString = date.toISOString().split('T')[0];
-    
+
     const { data, error } = await supabase
       .from('appointments')
       .select('id')
       .eq('appointment_date', dateString)
       .eq('barber_id', selectedBarber)
       .limit(1);
-    
+
     if (error) {
       console.error('Error checking appointments:', error);
       return false;
     }
-    
+
     return (data && data.length > 0);
   };
-  
+
   const formatTime = (timeString: string) => {
     return timeString.slice(0, 5);
   };
-  
+
   return (
     <section className="py-16 bg-background">
       <div className="container mx-auto px-4">
-        <motion.div 
+        <motion.div
           className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -247,9 +247,9 @@ const BarberSchedule = () => {
             Visualize todos os agendamentos e horários disponíveis para facilitar a organização da sua barbearia.
           </p>
         </motion.div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <motion.div 
+          <motion.div
             className="lg:col-span-1"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -285,8 +285,8 @@ const BarberSchedule = () => {
               </CardFooter>
             </Card>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="lg:col-span-2"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -311,8 +311,8 @@ const BarberSchedule = () => {
                       <span>Selecione uma data</span>
                     )}
                   </CardTitle>
-                  
-                  <select 
+
+                  <select
                     className="bg-barber-dark text-barber-light border-barber-secondary/50 rounded px-2 py-1 text-sm"
                     value={selectedBarber}
                     onChange={(e) => setSelectedBarber(e.target.value)}
@@ -328,7 +328,7 @@ const BarberSchedule = () => {
                   Visualize e gerencie os agendamentos do dia
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="p-4">
                 {isLoading ? (
                   <div className="text-center p-8">
@@ -359,9 +359,9 @@ const BarberSchedule = () => {
                             <TableCell className="text-right">
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
                                     className="text-barber-primary hover:bg-barber-primary hover:text-barber-light"
                                   >
                                     Detalhes
@@ -410,8 +410,8 @@ const BarberSchedule = () => {
                                     </div>
                                   </div>
                                   <div className="flex justify-end gap-2">
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                                       onClick={() => handleCancelAppointment(appointment.id)}
                                     >
@@ -439,7 +439,7 @@ const BarberSchedule = () => {
                   </div>
                 )}
               </CardContent>
-              
+
               <CardFooter className="bg-barber-dark/5 p-4 border-t">
                 <div className="w-full">
                   <h3 className="font-medium text-barber-dark mb-2 flex items-center gap-1">
@@ -448,13 +448,12 @@ const BarberSchedule = () => {
                   </h3>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-2">
                     {availableTimes.map((slot, index) => (
-                      <div 
+                      <div
                         key={index}
-                        className={`text-center px-2 py-1 rounded-md border text-sm font-medium ${
-                          slot.isBooked 
-                            ? 'bg-barber-primary/10 text-barber-primary/50 border-barber-primary/30' 
+                        className={`text-center px-2 py-1 rounded-md border text-sm font-medium ${slot.isBooked
+                            ? 'bg-barber-primary/10 text-barber-primary/50 border-barber-primary/30'
                             : 'bg-barber-light border-barber-secondary/30 text-barber-dark hover:bg-barber-secondary/20 cursor-pointer'
-                        }`}
+                          }`}
                       >
                         {slot.time}
                       </div>
