@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Scissors, Razor, HairDryer } from 'lucide-react';
+import { Scissors, Smile, Sparkles } from 'lucide-react';
 
 const serviceItems = [
   {
@@ -16,7 +16,7 @@ const serviceItems = [
     title: 'Barba Completa',
     description: 'Modelagem e hidratação da barba para um visual impecável.',
     price: 'R$ 35',
-    icon: Razor,
+    icon: Smile,
     duration: '25 min'
   },
   {
@@ -40,7 +40,7 @@ const serviceItems = [
     title: 'Hot Towel Shave',
     description: 'Barbear com toalha quente para uma experiência relaxante e premium.',
     price: 'R$ 40',
-    icon: Razor,
+    icon: Smile,
     duration: '30 min'
   },
   {
@@ -48,7 +48,7 @@ const serviceItems = [
     title: 'Tratamento Capilar',
     description: 'Tratamento para fortalecer e hidratar os fios, incluindo massagem.',
     price: 'R$ 60',
-    icon: HairDryer,
+    icon: Sparkles,
     duration: '40 min'
   }
 ];
