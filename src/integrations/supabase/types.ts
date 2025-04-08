@@ -9,7 +9,99 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          appointment_date: string
+          appointment_time: string
+          barber_id: string
+          client_email: string | null
+          client_name: string
+          client_phone: string
+          created_at: string
+          id: string
+          service_id: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_time: string
+          barber_id: string
+          client_email?: string | null
+          client_name: string
+          client_phone: string
+          created_at?: string
+          id?: string
+          service_id: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_time?: string
+          barber_id?: string
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string
+          created_at?: string
+          id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      barbers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          created_at: string
+          duration: number
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          id?: string
+          name: string
+          price: number
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

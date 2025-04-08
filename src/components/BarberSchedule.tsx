@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -27,57 +27,99 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarDays, Clock, Users } from 'lucide-react';
+import { CalendarDays, Clock, Users, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useSupabaseData } from '@/hooks/use-supabase-data';
 
-// Sample appointments data (in a real app, this would come from a database)
-const sampleAppointments = [
-  { id: 1, clientName: 'João Silva', service: 'Corte Clássico', date: new Date(2025, 3, 10, 10, 0), duration: 30 },
-  { id: 2, clientName: 'Ricardo Pereira', service: 'Barba Completa', date: new Date(2025, 3, 10, 14, 30), duration: 25 },
-  { id: 3, clientName: 'Antônio Santos', service: 'Combo Barba e Cabelo', date: new Date(2025, 3, 11, 11, 0), duration: 50 },
-  { id: 4, clientName: 'Marcos Oliveira', service: 'Corte Degradê', date: new Date(2025, 3, 12, 15, 0), duration: 35 },
-  { id: 5, clientName: 'Felipe Costa', service: 'Hot Towel Shave', date: new Date(2025, 3, 12, 16, 30), duration: 30 },
-];
+interface Barber {
+  id: string;
+  name: string;
+}
 
-const barbers = [
-  { id: 1, name: 'Ricardo Alves' },
-  { id: 2, name: 'Carlos Mendes' },
-  { id: 3, name: 'Fernando Costa' }
-];
+interface Service {
+  id: string;
+  name: string;
+  duration: number;
+  price: number;
+}
+
+interface Appointment {
+  id: string;
+  client_name: string;
+  client_phone: string;
+  client_email: string | null;
+  barber_id: string;
+  service_id: string;
+  appointment_date: string;
+  appointment_time: string;
+  created_at: string;
+  service?: Service;
+}
 
 const BarberSchedule = () => {
+  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedBarber, setSelectedBarber] = useState(1);
+  const [selectedBarber, setSelectedBarber] = useState<string>('');
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [availableTimes, setAvailableTimes] = useState<{ time: string; isBooked: boolean }[]>([]);
   
-  // Filter appointments for the selected date and barber
-  const getAppointmentsForDate = (date: Date | undefined) => {
-    if (!date) return [];
+  // Fetch barbers from Supabase
+  const { data: barbers } = useSupabaseData<Barber>({
+    tableName: 'barbers',
+    orderBy: { column: 'name' }
+  });
+  
+  // Fetch services from Supabase
+  const { data: services } = useSupabaseData<Service>({
+    tableName: 'services'
+  });
+  
+  useEffect(() => {
+    // Set default barber when data loads
+    if (barbers.length > 0 && !selectedBarber) {
+      setSelectedBarber(barbers[0].id);
+    }
+  }, [barbers, selectedBarber]);
+  
+  // Subscribe to changes in the appointments table
+  useEffect(() => {
+    const appointmentsChannel = supabase
+      .channel('appointments-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'appointments' 
+      }, () => {
+        // When changes occur, refresh the appointments data
+        fetchAppointmentsForDate();
+      })
+      .subscribe();
     
-    return sampleAppointments.filter(appointment => {
-      const appDate = new Date(appointment.date);
-      return appDate.getDate() === date.getDate() &&
-             appDate.getMonth() === date.getMonth() &&
-             appDate.getFullYear() === date.getFullYear();
-    });
+    return () => {
+      supabase.removeChannel(appointmentsChannel);
+    };
+  }, [selectedDate, selectedBarber]);
+  
+  // Fetch appointments when selected date or barber changes
+  useEffect(() => {
+    if (selectedDate && selectedBarber) {
+      fetchAppointmentsForDate();
+    }
+  }, [selectedDate, selectedBarber]);
+  
+  // Generate available time slots
+  useEffect(() => {
+    updateAvailableTimes();
+  }, [appointments]);
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
   };
   
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
-  
-  const appointmentsForSelectedDate = getAppointmentsForDate(selectedDate);
-  
-  // Function to check if date has appointments
-  const hasAppointments = (date: Date) => {
-    return sampleAppointments.some(appointment => {
-      const appDate = new Date(appointment.date);
-      return appDate.getDate() === date.getDate() &&
-             appDate.getMonth() === date.getMonth() &&
-             appDate.getFullYear() === date.getFullYear();
-    });
-  };
-  
-  // Get availability times for the selected date
-  const getAvailabilityTimes = () => {
+  const updateAvailableTimes = () => {
     const times = [];
     const startHour = 9; // 9 AM
     const endHour = 19; // 7 PM
@@ -86,9 +128,8 @@ const BarberSchedule = () => {
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += interval) {
         const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const isBooked = appointmentsForSelectedDate.some(appointment => {
-          const appTime = formatTime(appointment.date);
-          return appTime === timeStr;
+        const isBooked = appointments.some(appointment => {
+          return appointment.appointment_time.slice(0, 5) === timeStr;
         });
         
         times.push({ 
@@ -98,10 +139,97 @@ const BarberSchedule = () => {
       }
     }
     
-    return times;
+    setAvailableTimes(times);
   };
   
-  const availableTimes = getAvailabilityTimes();
+  const fetchAppointmentsForDate = async () => {
+    if (!selectedDate || !selectedBarber) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      
+      // Fetch appointments for the selected date and barber
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          service:service_id (
+            name,
+            duration,
+            price
+          )
+        `)
+        .eq('appointment_date', dateString)
+        .eq('barber_id', selectedBarber)
+        .order('appointment_time');
+      
+      if (error) throw error;
+      
+      setAppointments(data || []);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      toast({
+        title: "Erro ao carregar agendamentos",
+        description: "Não foi possível carregar os agendamentos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleCancelAppointment = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Agendamento cancelado",
+        description: "O agendamento foi cancelado com sucesso.",
+        variant: "default",
+      });
+      
+      // The subscription will automatically trigger a refresh
+    } catch (error) {
+      console.error('Error canceling appointment:', error);
+      toast({
+        title: "Erro ao cancelar",
+        description: "Não foi possível cancelar o agendamento.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Check if a date has appointments
+  const hasAppointments = async (date: Date) => {
+    if (!selectedBarber) return false;
+    
+    const dateString = date.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('appointment_date', dateString)
+      .eq('barber_id', selectedBarber)
+      .limit(1);
+    
+    if (error) {
+      console.error('Error checking appointments:', error);
+      return false;
+    }
+    
+    return (data && data.length > 0);
+  };
+  
+  const formatTime = (timeString: string) => {
+    return timeString.slice(0, 5);
+  };
   
   return (
     <section className="py-16 bg-background">
@@ -143,12 +271,6 @@ const BarberSchedule = () => {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   className="rounded-md border p-3 pointer-events-auto"
-                  modifiers={{
-                    booked: (date) => hasAppointments(date),
-                  }}
-                  modifiersClassNames={{
-                    booked: "bg-barber-secondary/30 text-barber-dark font-bold",
-                  }}
                 />
               </CardContent>
               <CardFooter className="bg-barber-dark/5 p-4 flex flex-col items-start border-t">
@@ -193,7 +315,7 @@ const BarberSchedule = () => {
                   <select 
                     className="bg-barber-dark text-barber-light border-barber-secondary/50 rounded px-2 py-1 text-sm"
                     value={selectedBarber}
-                    onChange={(e) => setSelectedBarber(Number(e.target.value))}
+                    onChange={(e) => setSelectedBarber(e.target.value)}
                   >
                     {barbers.map(barber => (
                       <option key={barber.id} value={barber.id}>
@@ -208,7 +330,12 @@ const BarberSchedule = () => {
               </CardHeader>
               
               <CardContent className="p-4">
-                {appointmentsForSelectedDate.length > 0 ? (
+                {isLoading ? (
+                  <div className="text-center p-8">
+                    <Loader2 className="w-10 h-10 mx-auto mb-2 text-barber-primary animate-spin" />
+                    <p>Carregando agendamentos...</p>
+                  </div>
+                ) : appointments.length > 0 ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -221,14 +348,14 @@ const BarberSchedule = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {appointmentsForSelectedDate.map((appointment) => (
+                        {appointments.map((appointment) => (
                           <TableRow key={appointment.id}>
                             <TableCell className="font-medium">
-                              {formatTime(appointment.date)}
+                              {formatTime(appointment.appointment_time)}
                             </TableCell>
-                            <TableCell>{appointment.clientName}</TableCell>
-                            <TableCell>{appointment.service}</TableCell>
-                            <TableCell>{appointment.duration} min</TableCell>
+                            <TableCell>{appointment.client_name}</TableCell>
+                            <TableCell>{appointment.service?.name}</TableCell>
+                            <TableCell>{appointment.service?.duration} min</TableCell>
                             <TableCell className="text-right">
                               <Dialog>
                                 <DialogTrigger asChild>
@@ -251,26 +378,28 @@ const BarberSchedule = () => {
                                     <div className="grid grid-cols-3 gap-4">
                                       <div className="flex flex-col gap-1">
                                         <span className="text-sm font-medium text-muted-foreground">Cliente</span>
-                                        <span className="text-barber-dark font-semibold">{appointment.clientName}</span>
+                                        <span className="text-barber-dark font-semibold">{appointment.client_name}</span>
                                       </div>
                                       <div className="flex flex-col gap-1">
                                         <span className="text-sm font-medium text-muted-foreground">Serviço</span>
-                                        <span className="text-barber-dark font-semibold">{appointment.service}</span>
+                                        <span className="text-barber-dark font-semibold">{appointment.service?.name}</span>
                                       </div>
                                       <div className="flex flex-col gap-1">
                                         <span className="text-sm font-medium text-muted-foreground">Duração</span>
-                                        <span className="text-barber-dark font-semibold">{appointment.duration} min</span>
+                                        <span className="text-barber-dark font-semibold">{appointment.service?.duration} min</span>
                                       </div>
                                     </div>
                                     <div className="flex flex-col gap-1">
                                       <span className="text-sm font-medium text-muted-foreground">Data e Hora</span>
                                       <span className="text-barber-dark font-semibold">
-                                        {appointment.date.toLocaleDateString('pt-BR', {
-                                          weekday: 'long',
-                                          day: 'numeric',
-                                          month: 'long',
-                                          year: 'numeric'
-                                        })} às {formatTime(appointment.date)}
+                                        {formatDate(appointment.appointment_date)} às {formatTime(appointment.appointment_time)}
+                                      </span>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-sm font-medium text-muted-foreground">Contato</span>
+                                      <span className="text-barber-dark font-semibold">
+                                        {appointment.client_phone}
+                                        {appointment.client_email && ` - ${appointment.client_email}`}
                                       </span>
                                     </div>
                                     <div className="flex flex-col gap-1">
@@ -284,6 +413,7 @@ const BarberSchedule = () => {
                                     <Button 
                                       variant="outline" 
                                       className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                      onClick={() => handleCancelAppointment(appointment.id)}
                                     >
                                       Cancelar Agendamento
                                     </Button>
