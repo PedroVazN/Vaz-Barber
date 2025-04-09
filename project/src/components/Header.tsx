@@ -102,10 +102,14 @@ const Header = () => {
         
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {['serviços', 'barbeiros', 'contato'].map((item, index) => (
+          {[
+            { id: 'services', label: 'Serviços' },
+            { id: 'barbers', label: 'Barbeiros' },
+            { id: 'contact', label: 'Contato' },
+          ].map((item, index) => (
             <motion.a 
-              key={item} 
-              href={`#${item}`} 
+              key={item.id} 
+              href={`#${item.id}`} 
               className="text-barber-light hover:text-barber-secondary transition-colors relative"
               whileHover={{ scale: 1.05 }}
               custom={index}
@@ -117,7 +121,7 @@ const Header = () => {
               }}
             >
               <span className="relative">
-                {item.charAt(0).toUpperCase() + item.slice(1)}
+                {item.label}
                 <motion.span 
                   className="absolute -bottom-1 left-0 right-0 h-0.5 bg-barber-secondary"
                   initial={{ width: 0 }}
