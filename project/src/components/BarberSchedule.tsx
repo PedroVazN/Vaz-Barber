@@ -63,7 +63,7 @@ const BarberSchedule = () => {
   const [selectedBarber, setSelectedBarber] = useState<string>('');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [availableTimes, setAvailableTimes] = useState<{ time: string; isBooked: boolean }[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<Array<{ time: string; isBooked: boolean }>>([]);
 
   // Fetch barbers from Supabase
   const { data: barbers } = useSupabaseData<Barber>({
@@ -120,7 +120,7 @@ const BarberSchedule = () => {
   };
 
   const updateAvailableTimes = () => {
-    const times = [];
+    const times: Array<{ time: string; isBooked: boolean }> = [];
     const startHour = 9; // 9 AM
     const endHour = 19; // 7 PM
     const interval = 30; // 30 minutes
@@ -167,7 +167,14 @@ const BarberSchedule = () => {
 
       if (error) throw error;
 
-      setAppointments(data || []);
+      setAppointments(
+        (data || []).map((appointment) => ({
+          ...appointment,
+          service: appointment.service
+            ? { ...appointment.service, id: appointment.service_id }
+            : undefined,
+        }))
+      );
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
