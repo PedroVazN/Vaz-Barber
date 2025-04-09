@@ -10,7 +10,7 @@ const Footer = () => {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 text-barber-secondary mb-4">
               <Scissors className="h-6 w-6" />
-              <span className="text-xl font-bold tracking-wider">NAVALHA DIGITAL</span>
+              <span className="text-xl font-bold tracking-wider">Vaz Barber</span>
             </div>
             <p className="text-barber-light/70 mb-6">
               Oferecendo cortes premium e serviços de barbearia com estilo e precisão desde 2010.
@@ -111,8 +111,8 @@ const Footer = () => {
                 </a>
               </p>
               <p>
-                <a href="mailto:contato@navalhadigital.com" className="hover:text-barber-secondary transition-colors">
-                  contato@navalhadigital.com
+                <a href="mailto:contato@vazbarber.com" className="hover:text-barber-secondary transition-colors">
+                  contato@vazbarber.com
                 </a>
               </p>
             </address>
@@ -120,7 +120,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-barber-light/10 mt-12 pt-8 text-center text-barber-light/60 text-sm">
-          <p>&copy; {new Date().getFullYear()} Navalha Digital. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Vaz Barber. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>
